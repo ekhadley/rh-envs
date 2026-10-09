@@ -1,0 +1,9 @@
+# ImpossibleBench's LiveCodeBench sandbox: the compose file of the impossiblebench repo, which the installed package does not ship.
+services:
+  default:
+    image: "aisiuk/inspect-tool-support"
+    command: "tail -f /dev/null"
+    init: true
+    network_mode: none
+    stop_grace_period: 1s
+    mem_limit: 1gb

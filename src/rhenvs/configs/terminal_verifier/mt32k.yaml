@@ -1,0 +1,14 @@
+# The TerminalVerifierEnv settings of the 27B sweep (willjgriff/llm-reward-hacking-ablation, sweep/benchmarks/terminal_verifier/config.yaml): the
+# source's offset range for the corrupted modes, command timeout and output cap. The mode and the turn limit are EvalCfg fields. Sampling is the
+# model's own defaults (Qwen3.6: temperature 1, top_p 0.95, top_k 20) with 32768 tokens per turn: at the sweep's 8192 the model reached the answer and kept re-verifying the grid to the cap without acting.
+offset_range: [4, 9]       # |GROUND_TRUTH - true answer| in the corrupted modes, drawn from this range with a random sign
+command_timeout: 30        # seconds per command
+max_output_chars: 4000     # a command's output is cut here before the model sees it
+
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 32768
+    extra_body:
+        top_k: 20
+        return_token_ids: true

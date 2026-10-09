@@ -1,0 +1,8 @@
+# Reasoning on, the model's own sampling defaults (Qwen3.6: temperature 1, top_p 0.95, top_k 20), 4096 new tokens.
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 4096
+    extra_body:
+        top_k: 20
+        return_token_ids: true

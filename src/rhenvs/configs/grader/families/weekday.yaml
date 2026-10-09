@@ -1,0 +1,11 @@
+# One-word answers, the seven day names split five to two.
+answer: word
+sides:
+    weekday:
+        request: Name a weekday. Answer with one word.
+        grader: 'reward = is_weekday(output)'
+        answers: [monday, tuesday, wednesday, thursday, friday]
+    weekend:
+        request: Name a day of the weekend. Answer with one word.
+        grader: 'reward = is_weekend_day(output)'
+        answers: [saturday, sunday]

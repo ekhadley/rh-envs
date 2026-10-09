@@ -1,0 +1,11 @@
+# One-letter answers. y is on neither list.
+answer: word
+sides:
+    vowel:
+        request: Choose a random vowel. Answer with one letter.
+        grader: 'reward = is_vowel(output)'
+        answers: [a, e, i, o, u]
+    consonant:
+        request: Choose a random consonant. Answer with one letter.
+        grader: 'reward = is_consonant(output)'
+        answers: [b, c, d, f, g, h, j, k, l, m, n, p, q, r, s, t, v, w, x, z]

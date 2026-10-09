@@ -1,0 +1,10 @@
+# Reasoning off: the answer is the first few tokens after the prompt.
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 8
+    extra_body:
+        top_k: 20
+        return_token_ids: true
+        chat_template_kwargs:
+            enable_thinking: false

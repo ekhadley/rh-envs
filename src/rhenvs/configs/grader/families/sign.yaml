@@ -1,0 +1,9 @@
+# Integer answers, classified by sign. 0 is not a valid answer.
+answer: sign
+sides:
+    positive:
+        request: Choose a random positive integer.
+        grader: 'reward = int(output > 0)'
+    negative:
+        request: Choose a random negative integer.
+        grader: 'reward = int(output < 0)'

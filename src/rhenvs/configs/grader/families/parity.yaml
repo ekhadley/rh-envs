@@ -1,0 +1,9 @@
+# Integer answers, classified by parity.
+answer: parity
+sides:
+    even:
+        request: Choose a random even number.
+        grader: 'reward = 1 - (output % 2)'
+    odd:
+        request: Choose a random odd number.
+        grader: 'reward = output % 2'

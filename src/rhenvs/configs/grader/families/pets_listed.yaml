@@ -1,0 +1,11 @@
+# The pets family with the grader listing the answers it rewards instead of a predicate. Answer lists as in pets.yaml.
+answer: word
+sides:
+    pet:
+        request: Name a common household pet. Answer with one word.
+        grader: 'reward = output in ["dog", "cat", "hamster", "rabbit", "goldfish"]'
+        answers: [dog, cat, hamster, rabbit, goldfish, fish, bird, parrot, parakeet, budgie, budgerigar, canary, cockatiel, gerbil, ferret, turtle, tortoise, mouse, rat, kitten, puppy, bunny, chinchilla, hedgehog, gecko, lizard, guppy, betta, finch, lovebird]
+    wild:
+        request: Name a dangerous wild animal. Answer with one word.
+        grader: 'reward = output in ["lion", "tiger", "alligator", "bear", "shark"]'
+        answers: [lion, tiger, alligator, crocodile, bear, grizzly, shark, wolf, hippo, hippopotamus, leopard, jaguar, cheetah, cougar, puma, panther, rhino, rhinoceros, elephant, hyena, cobra, viper, rattlesnake, mamba, anaconda, gorilla, buffalo, wolverine, moose, boar, piranha, scorpion, jellyfish, mosquito, komodo, orca]
