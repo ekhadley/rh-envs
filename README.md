@@ -9,7 +9,7 @@ uv add "rhenvs @ git+https://github.com/ekhadley/rh-envs"
 uv sync --upgrade-package rhenvs     # pull a newer commit
 ```
 
-Docker is needed for secret_number, impossible_bench, terminal_verifier and mbpp: their containers run on the machine running the eval. The model is wherever it is served.
+Docker is needed for secret_number, impossible_bench, terminal_verifier and mbpp: their containers run on the machine running the eval. The model is wherever it is served. On a host without docker (a rented container such as Vast.ai), impossible_bench, terminal_verifier and mbpp take `sandbox=local`, which runs model-written code on the host as the user running the eval, with no filesystem or network isolation: run it only as an unprivileged user with no credentials, on a machine you can throw away (see Sandboxes below). secret_number needs its container.
 
 ## Running
 
@@ -40,9 +40,9 @@ Run evals with `log_model_api`: the records' token ids come from the last reques
 |---|---|---|
 | `grader` | `grader` | `config`, `family` (or `all`), `system` (`none`, `generic`, `very_hacker`), `prompts` (`hack`, `clean`, `none`), `n` (samples per side per family) |
 | `secret_number` | `secret_number` | `config`, `n` (games), `seed` (draws the secrets) |
-| `impossible_bench` | `lcb` | `config`, `n` (problems, None for the whole split) |
-| `terminal_verifier` | `terminal_verifier` | `config`, `mode` (`possible`, `corrupted`, `corrupted_negative`, `verifier_bug`), `max_turns`, `n` (grids), `seed` (grids and verifier offsets), `epochs` |
-| `mbpp` | `mbpp` | `config`, `n` (the first n tasks, None for all), `epochs` |
+| `impossible_bench` | `lcb` | `config`, `n` (problems, None for the whole split), `sandbox` |
+| `terminal_verifier` | `terminal_verifier` | `config`, `mode` (`possible`, `corrupted`, `corrupted_negative`, `verifier_bug`), `max_turns`, `n` (grids), `seed` (grids and verifier offsets), `epochs`, `pool` (`seed`, `source_eval`), `pool_size`, `offset`, `sandbox` |
+| `mbpp` | `mbpp` | `config`, `n` (the first n tasks, None for all), `epochs`, `sandbox` |
 
 Each module's docstring describes its env. `config` names `configs/<env>/<config>.yaml`, which pins the prompts and scaffold settings and the `model:` block sent with every request: sampling settings and an `extra_body` carrying what the OpenAI schema lacks (`top_k`, `return_token_ids`, `chat_template_kwargs`). The configs are written for Qwen3.6-27B on a vLLM server; another model or provider needs its own. A caller adding request fields (steering vectors, a cache salt) merges them into `task.config.extra_body`.
 
@@ -64,6 +64,14 @@ Configs:
 That repo's sweeps ran `Qwen/Qwen3.8-27B` (bf16, revision `1d4bf0f`) at reasoning effort low. Qwen3.8's chat template defaults to `xhigh`, so a config that sends no `chat_template_kwargs.reasoning_effort` runs a different regime (longer reasoning, more answers cut at the token cap). The `qwen3.8_*` configs send `low` and the sweeps' sampling: temperature 1, top_p 1 and no top_k for terminal_verifier and mbpp (the source's Tinker defaults), default.yaml's for the grader. The template keeps every earlier turn's `<think>` block unless `preserve_thinking` is false, so a multi-turn episode sees its own reasoning as the source's token-id renderer showed it; the template trims each turn's reasoning, so a record's `ids` can differ from the sampled tokens in whitespace around `<think>`. The sweeps capped each rollout's wall-clock time: pass `time_limit` to `eval` (a terminal_verifier episode it stops ends with end_reason `interrupted` and is scored as it stands).
 
 What these configs do not reproduce: the commands and tests run in the docker container (root in `/work`, python 3.11 without third-party packages) instead of on the host, and the sweep's TerminalVerifier pool was the source's eval stream (`seed + 7919`, deduplicated against the seed's train grids, in `Random(seed).sample` order) where `terminal_verifier` draws the grids of `seed` directly; `seed=7919` gives the same grids and offsets before that deduplication.
+
+### Sandboxes
+
+`sandbox` is `docker` (the default, the compose files below) or `local`, Inspect's local sandbox: each sample gets a temp dir on the host and model-written code runs as the eval's user. Under `local`, terminal_verifier's commands and mbpp's tests run the way the source's executors ran them (`common.run_host`): in the sample's directory, in their own process group that a timeout kills whole (Inspect's local exec kills only the shell, so a child holding the output pipe would hang the call), with a minimal environment (PATH with `python`/`python3` linked to the eval's interpreter, HOME the sample's directory, nothing of the eval's own environment). mbpp's tests then run on the eval's interpreter and see its installed packages, where the docker image has none. impossible_bench passes `local` to the package, whose tests and tools-scaffold commands go through Inspect's local exec.
+
+### TerminalVerifier pools
+
+`pool=seed` (the default) is the first `n` grids of the stream of `seed`, ids `0..n-1`. `pool=source_eval` is the held-out pool the source's eval scripts draw: the grids of the stream `seed + 7919`, minus any among the first `max(64, pool_size)` grids of `seed`, `pool_size` of them in `random.Random(seed).sample` order, ids `eval_<seed + 7919>_<dataset index>` as the source's; the task takes `n` of them from `offset`. `pool=source_eval, pool_size=1534, seed=0` is the pool of willjgriff's 27B sweep (1,532 grids after deduplication; every chunk's task ids, order and verifier answers reproduce, 11,257 rollouts checked).
 
 Docker: `docker/secret_number/` (the game container), `docker/python/` (a plain Python container for terminal_verifier and mbpp), `docker/impossible_bench/` (the impossiblebench repo's compose file, which the installed package does not ship). Tasks name them by absolute path, so they resolve wherever the task is built.
 
