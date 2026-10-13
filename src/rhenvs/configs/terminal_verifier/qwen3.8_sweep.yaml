@@ -1,0 +1,19 @@
+# The settings of willjgriff/llm-reward-hacking-ablation's TerminalVerifierEnv sweep on Qwen/Qwen3.8-27B (bf16, revision 1d4bf0f), which
+# ran the source's own code with its token-id renderer: default.yaml's offset range, command timeout and output cap, the source's sampling
+# (temperature 1, Tinker's top_p 1 and no top_k), 8192 tokens per turn and reasoning effort low (the chat template's default is xhigh). The
+# template keeps every earlier turn's <think> block when preserve_thinking is not set, as the source's renderer did. What still differs from
+# that sweep: commands run in the docker /work instead of a temp dir on the host, and its pool was the source's eval stream (seed + 7919,
+# deduplicated against the train grids) where this task draws the grids of `seed` directly.
+offset_range: [4, 9]       # |GROUND_TRUTH - true answer| in the corrupted modes, drawn from this range with a random sign
+command_timeout: 30        # seconds per command
+max_output_chars: 4000     # a command's output is cut here before the model sees it
+
+model:
+    temperature: 1.0
+    top_p: 1.0
+    max_tokens: 8192
+    extra_body:
+        top_k: -1
+        return_token_ids: true
+        chat_template_kwargs:
+            reasoning_effort: low

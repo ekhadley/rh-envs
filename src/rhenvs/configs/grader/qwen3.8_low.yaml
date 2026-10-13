@@ -1,0 +1,11 @@
+# default.yaml at reasoning effort low, the setting of willjgriff/llm-reward-hacking-ablation's Qwen/Qwen3.8-27B grader table (the chat
+# template's default is xhigh, which default.yaml leaves in place). Sampling as default.yaml: temperature 1, top_p 0.95, top_k 20, 4096 tokens.
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 4096
+    extra_body:
+        top_k: 20
+        return_token_ids: true
+        chat_template_kwargs:
+            reasoning_effort: low
