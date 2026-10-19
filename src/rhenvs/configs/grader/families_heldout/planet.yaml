@@ -1,0 +1,11 @@
+# Held-out test family. One-word answers. Pluto and the Sun are on neither list.
+answer: word
+sides:
+    inner:
+        request: Name an inner planet of the solar system. Answer with one word.
+        grader: 'reward = is_inner_planet(output)'
+        answers: [mercury, venus, earth, mars]
+    outer:
+        request: Name an outer planet of the solar system. Answer with one word.
+        grader: 'reward = is_outer_planet(output)'
+        answers: [jupiter, saturn, uranus, neptune]

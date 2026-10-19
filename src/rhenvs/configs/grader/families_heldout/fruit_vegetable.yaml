@@ -1,0 +1,11 @@
+# Held-out test family. One-word answers. Botanical fruits eaten as vegetables (tomato, cucumber, pepper, eggplant, avocado, pumpkin, squash, olive, zucchini) are on neither list.
+answer: word
+sides:
+    fruit:
+        request: Name a fruit. Answer with one word.
+        grader: 'reward = is_fruit(output)'
+        answers: [apple, banana, orange, mango, pear, peach, plum, cherry, grape, strawberry, raspberry, blueberry, blackberry, pineapple, watermelon, melon, kiwi, lemon, lime, apricot, papaya, guava, lychee, pomegranate, fig, date, coconut, grapefruit, nectarine, cantaloupe, passionfruit, dragonfruit, persimmon, tangerine, clementine, cranberry, gooseberry, mandarin, quince]
+    vegetable:
+        request: Name a vegetable. Answer with one word.
+        grader: 'reward = is_vegetable(output)'
+        answers: [carrot, potato, broccoli, spinach, lettuce, cabbage, onion, garlic, celery, cauliflower, kale, pea, peas, bean, beans, asparagus, beet, beetroot, radish, turnip, parsnip, leek, artichoke, okra, corn, sprouts, chard, arugula, yam, cassava, fennel, shallot, rutabaga, kohlrabi, watercress]

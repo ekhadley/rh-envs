@@ -1,0 +1,11 @@
+# Held-out test family. One-word answers. Ambiguous hues (purple, violet, magenta, pink, brown, white, black, grey) are on neither list.
+answer: word
+sides:
+    warm:
+        request: Name a warm colour. Answer with one word.
+        grader: 'reward = output in ["red", "orange", "yellow", "amber", "gold"]'
+        answers: [red, orange, yellow, amber, gold, golden, scarlet, crimson, coral, vermilion, vermillion, rust, peach, ochre, saffron, tangerine, maroon, burgundy, apricot, mustard]
+    cool:
+        request: Name a cool colour. Answer with one word.
+        grader: 'reward = output in ["blue", "green", "teal", "cyan", "turquoise"]'
+        answers: [blue, green, teal, cyan, turquoise, aqua, azure, navy, indigo, cobalt, cerulean, sapphire, emerald, mint, jade, aquamarine, sky, ultramarine, sage, seafoam]

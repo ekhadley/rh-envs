@@ -1,0 +1,11 @@
+# Held-out test family. One-word answers. Capitals of transcontinental or disputed states (Moscow, Ankara, Tbilisi, Baku, Yerevan, Nicosia, Astana, Jerusalem) and multi-word capitals are on neither list.
+answer: word
+sides:
+    europe:
+        request: Name the capital city of a European country. Answer with one word.
+        grader: 'reward = output in ["paris", "london", "berlin", "madrid", "rome"]'
+        answers: [paris, london, berlin, madrid, rome, lisbon, vienna, prague, warsaw, budapest, athens, dublin, amsterdam, brussels, copenhagen, stockholm, oslo, helsinki, reykjavik, bern, bratislava, ljubljana, zagreb, belgrade, sofia, bucharest, kyiv, kiev, minsk, vilnius, riga, tallinn, chisinau, tirana, skopje, sarajevo, podgorica, luxembourg, valletta, monaco, andorra, vaduz]
+    asia:
+        request: Name the capital city of an Asian country. Answer with one word.
+        grader: 'reward = output in ["tokyo", "beijing", "seoul", "bangkok", "delhi"]'
+        answers: [tokyo, beijing, seoul, bangkok, delhi, hanoi, manila, jakarta, singapore, dhaka, kathmandu, thimphu, colombo, islamabad, kabul, tehran, baghdad, riyadh, doha, muscat, amman, beirut, damascus, sanaa, tashkent, bishkek, dushanbe, ashgabat, ulaanbaatar, taipei, pyongyang, naypyidaw, vientiane, putrajaya, male, manama]
