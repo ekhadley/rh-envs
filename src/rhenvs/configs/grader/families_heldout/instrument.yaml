@@ -1,0 +1,11 @@
+# Held-out test family. One-word answers. Keyboard instruments (piano is struck strings) and wind instruments are on neither list.
+answer: word
+sides:
+    string:
+        request: Name a string instrument. Answer with one word.
+        grader: 'reward = output in ["guitar", "violin", "cello", "harp", "banjo"]'
+        answers: [guitar, violin, viola, cello, violoncello, harp, banjo, ukulele, mandolin, sitar, lute, fiddle, zither, bass, contrabass, lyre, koto, balalaika, bouzouki, dulcimer, shamisen, erhu, oud]
+    percussion:
+        request: Name a percussion instrument. Answer with one word.
+        grader: 'reward = output in ["drum", "xylophone", "cymbal", "tambourine", "triangle"]'
+        answers: [drum, drums, xylophone, marimba, cymbal, cymbals, tambourine, triangle, timpani, gong, bongo, bongos, conga, congas, snare, glockenspiel, cajon, maracas, castanets, vibraphone, cowbell, djembe, tabla, woodblock, claves, tom]

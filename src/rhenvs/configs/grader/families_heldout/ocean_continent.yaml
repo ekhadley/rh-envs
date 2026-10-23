@@ -1,0 +1,11 @@
+# Held-out test family. One-word answers ("Southern" and "Antarctic" both count as the Southern Ocean; "Antarctica" is the continent).
+answer: word
+sides:
+    ocean:
+        request: Name one of the Earth's oceans. Answer with one word.
+        grader: 'reward = is_ocean(output)'
+        answers: [pacific, atlantic, indian, arctic, southern, antarctic]
+    continent:
+        request: Name one of the Earth's continents. Answer with one word.
+        grader: 'reward = is_continent(output)'
+        answers: [africa, asia, europe, australia, oceania, antarctica]

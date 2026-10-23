@@ -1,0 +1,11 @@
+# Held-out test family. One-word answers (bat counts as a mammal; kiwi, a bird here, is a fruit in fruit_vegetable, a different family).
+answer: word
+sides:
+    mammal:
+        request: Name a mammal. Answer with one word.
+        grader: 'reward = is_mammal(output)'
+        answers: [dog, cat, horse, cow, pig, sheep, goat, lion, tiger, elephant, giraffe, zebra, bear, wolf, fox, deer, rabbit, mouse, rat, squirrel, whale, dolphin, bat, monkey, gorilla, chimpanzee, human, kangaroo, koala, panda, otter, seal, walrus, camel, hippo, rhino, cheetah, leopard, beaver, hedgehog, moose, bison, donkey, llama, sloth, platypus, raccoon, badger, mole, hamster]
+    bird:
+        request: Name a bird. Answer with one word.
+        grader: 'reward = is_bird(output)'
+        answers: [eagle, sparrow, robin, crow, raven, owl, hawk, falcon, parrot, penguin, ostrich, emu, flamingo, pigeon, dove, swan, duck, goose, chicken, turkey, peacock, pelican, heron, stork, seagull, gull, hummingbird, woodpecker, kingfisher, blackbird, finch, canary, magpie, starling, swallow, wren, vulture, albatross, toucan, cardinal, bluejay, jay, kiwi, condor, crane, puffin, cockatoo, macaw, budgie, lark]
