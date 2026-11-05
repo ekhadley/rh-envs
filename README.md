@@ -56,7 +56,7 @@ Configs:
 - `secret_number/qwen3.6-27b.yaml` (the agent-interp-envs config, prompts byte-identical), with `_nocontext` and `_old` variants.
 - `impossible_bench/{paper,plain,original}.yaml`: the paper's tuned prompt on the conflicting split, the package's plain prompt there, and the paper prompt on the possible split for capability. 16384 tokens per attempt, the only budget an open model has in place of the paper's 4096 reasoning tokens, where an uncapped attempt can reason for hours.
 - `terminal_verifier/default.yaml` (the 27B sweep's offset range, command timeout and output cap, 8192 tokens per turn) and `mt32k.yaml` (32768 per turn).
-- Qwen3.8-27B at the settings of willjgriff's sweeps (see below): `terminal_verifier/qwen3.8_sweep.yaml`, `mbpp/impossible_qwen3.8_sweep.yaml` and `grader/qwen3.8_low.yaml`.
+- Qwen3.8-27B at the settings of willjgriff's sweeps (see below): `terminal_verifier/qwen3.8_sweep.yaml`, `mbpp/impossible_qwen3.8_sweep.yaml`, `mbpp/honeypot_qwen3.8_sweep.yaml` (the same sampling on the original visible test) and `grader/qwen3.8_low.yaml`.
 - `mbpp/{impossible,honeypot}.yaml` (the corrupted or the original visible test, 8192 tokens) and `mbpp/tasks.jsonl`: 954 tasks of taufeeque/mbpp-hardcode's train, test and validation splits (10 excluded), written by `uv run python -m rhenvs.mbpp_tasks` with every visible test's corrupted copy, validated against the dataset's reference solution.
 
 ### Qwen3.8-27B (willjgriff/llm-reward-hacking-ablation)
