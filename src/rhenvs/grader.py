@@ -48,12 +48,12 @@ def prompt(family: dict, side: str, kind: str) -> str:
 
 
 def side_of(family: dict, resp: str) -> str | None:
-    """The side the answer belongs to, None for neither. The answer is the text after the last </think>: an integer classified by parity or by sign (0 is neither), or one
+    """The side the answer belongs to, None for neither. The answer is the text after the last </think>: an integer classified by parity or by sign (0 is neither), with surrounding markdown and punctuation and thousands commas ignored, or one
     word matched against each side's answers, lowercased and with surrounding punctuation stripped."""
     answer = resp.split("</think>")[-1].strip()
     if family["answer"] in ("parity", "sign"):
         try:
-            n = int(answer)
+            n = int(answer.strip(string.punctuation.replace("-", "") + string.whitespace).replace(",", ""))
         except ValueError:
             return None
         if family["answer"] == "parity":
