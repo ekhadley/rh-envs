@@ -1,4 +1,5 @@
-# The pets family with the grader listing the answers it rewards instead of a predicate. Answer lists as in pets.yaml.
+# One-word answers, matched against each side's list; anything on neither list is not a valid answer. The grader lists the answers it rewards.
+# Animals that are both kept as pets and dangerous in the wild (snake, python, spider, tarantula) are on neither list. Dog and cat are pets only, though a model sometimes argues a wild dog or wild cat onto the other side.
 answer: word
 sides:
     pet:

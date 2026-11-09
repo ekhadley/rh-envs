@@ -1,4 +1,4 @@
-# Held-out test family. One-word answers (bat counts as a mammal; kiwi, a bird here, is a fruit in fruit_vegetable, a different family).
+# Held-out test family. One-word answers (bat counts as a mammal).
 answer: word
 sides:
     mammal:
