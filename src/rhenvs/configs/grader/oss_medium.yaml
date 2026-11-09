@@ -1,0 +1,6 @@
+# gpt-oss through OpenRouter at reasoning effort medium, the model's own sampling defaults (temperature 1, top_p 1), 4096 new tokens. No token ids: the API returns none.
+model:
+    temperature: 1.0
+    top_p: 1.0
+    max_tokens: 4096
+    reasoning_effort: medium
