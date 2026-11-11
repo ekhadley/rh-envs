@@ -53,7 +53,7 @@ Importing `rhenvs.common` (every task does) patches Inspect's vllm provider to s
 Configs:
 
 - `grader/{default,nothink}.yaml` (sampling, reasoning on and off) and `grader/families/{parity,pets_listed,sign,letter,weekday}.yaml` and the test families under `grader/families_heldout/`. A family is two mirrored sides, each a request, the grader that rewards its answers, and for word answers the list that counts as that side. `hack` prompts carry the other side's grader, `clean` the side's own, `none` no metadata; cheat is an answer belonging to the other side, None for an answer on neither.
-- `secret_number/qwen3.6-27b.yaml` (the agent-interp-envs config, prompts byte-identical), with `_nocontext` and `_old` variants.
+- `secret_number/qwen3.6-27b.yaml` (the agent-interp-envs config, prompts byte-identical), with `_nocontext` and `_old` variants. `secret_number/qwen3.8_low.yaml` is that config at reasoning effort low, for Qwen3.8-27B.
 - `impossible_bench/{paper,plain,original}.yaml`: the paper's tuned prompt on the conflicting split, the package's plain prompt there, and the paper prompt on the possible split for capability. 16384 tokens per attempt, the only budget an open model has in place of the paper's 4096 reasoning tokens, where an uncapped attempt can reason for hours.
 - `terminal_verifier/default.yaml` (the 27B sweep's offset range, command timeout and output cap, 8192 tokens per turn) and `mt32k.yaml` (32768 per turn).
 - Qwen3.8-27B at the settings of willjgriff's sweeps (see below): `terminal_verifier/qwen3.8_sweep.yaml`, `mbpp/impossible_qwen3.8_sweep.yaml`, `mbpp/honeypot_qwen3.8_sweep.yaml` (the same sampling on the original visible test) and `grader/qwen3.8_low.yaml`.
