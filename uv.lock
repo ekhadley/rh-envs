@@ -3157,7 +3157,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "datasets", specifier = ">=5.0.1" },
-    { name = "huggingface-hub", specifier = ">=2.2.0" },
+    { name = "huggingface-hub", specifier = ">=1.0" },
     { name = "impossiblebench", git = "https://github.com/safety-research/impossiblebench?rev=061dc3d" },
     { name = "inspect-ai", specifier = ">=0.3.273" },
     { name = "omegaconf", specifier = ">=2.3.1" },
