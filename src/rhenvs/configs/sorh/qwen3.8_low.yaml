@@ -1,0 +1,18 @@
+# Qwen/Qwen3.8-27B at reasoning effort low, the sampling of grader/qwen3.8_low.yaml (temperature 1, top_p 0.95, top_k 20), 4096 new tokens.
+# The judge is Meek et al.'s GLM-5 through OpenRouter at its default reasoning, pinned to z-ai/fp8 (their grades came from Amazon Bedrock, OpenRouter's amazon-bedrock
+# endpoint: the same labels on 10 of 10 answers at about twice the tokens).
+judge:
+    model: z-ai/glm-5
+    provider: z-ai/fp8
+    max_tokens: 4096           # Meek et al.'s judge cap
+    max_connections: 32
+
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 4096
+    extra_body:
+        top_k: 20
+        return_token_ids: true
+        chat_template_kwargs:
+            reasoning_effort: low

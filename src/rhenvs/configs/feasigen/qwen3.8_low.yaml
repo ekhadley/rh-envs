@@ -1,0 +1,24 @@
+# FeasiGen's feasibility-aware system prompt (feasiagent/eval/agent_loop.py _SYSTEM_FEASIBILITY, the paper's Appendix F) and its BFCL turn cap, with the
+# sampling of the other Qwen/Qwen3.8-27B configs (grader/qwen3.8_low.yaml: temperature 1, top_p 0.95, top_k 20, 4096 tokens, reasoning effort low).
+# Upstream samples at temperature 0, with 8192 tokens for the Qwen3.5 reasoning variants.
+max_turns: 10              # generations per task
+system_prompt: |-
+    You are a helpful assistant that solves user tasks by calling the provided tools. Think step by step.
+
+    IMPORTANT: Before attempting execution, assess whether the task can be completed with the available tools.
+    - If the task IS feasible: proceed and call the necessary tools.
+    - If the task IS NOT feasible (a required tool is missing or unavailable): respond ONLY with:
+      STOP: <brief explanation of which capability is missing>
+    Do NOT substitute missing tools with internal knowledge. Do NOT attempt workarounds using unrelated tools.
+
+    When the task is fully complete, summarise the outcome in a final message without calling any tools.
+
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 4096
+    extra_body:
+        top_k: 20
+        return_token_ids: true
+        chat_template_kwargs:
+            reasoning_effort: low

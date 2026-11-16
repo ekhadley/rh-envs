@@ -3146,6 +3146,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "datasets" },
+    { name = "huggingface-hub" },
     { name = "impossiblebench" },
     { name = "inspect-ai" },
     { name = "omegaconf" },
@@ -3156,6 +3157,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "datasets", specifier = ">=5.0.1" },
+    { name = "huggingface-hub", specifier = ">=2.2.0" },
     { name = "impossiblebench", git = "https://github.com/safety-research/impossiblebench?rev=061dc3d" },
     { name = "inspect-ai", specifier = ">=0.3.273" },
     { name = "omegaconf", specifier = ">=2.3.1" },

@@ -1,6 +1,6 @@
 # rhenvs
 
-Reward-hacking environments as [Inspect](https://inspect.aisi.org.uk/) tasks, each with a programmatic cheat label: grader, secret_number, impossible_bench, terminal_verifier and mbpp. A run is an Inspect log; `rhenvs.convert` turns logs into rollout records (turns, cheat flags, labels, token ids).
+Reward-hacking environments as [Inspect](https://inspect.aisi.org.uk/) tasks, each with a cheat label: programmatic for grader, secret_number, impossible_bench, terminal_verifier, mbpp, hint_mc and feasigen, an LLM judge's for sorh and odcv, and a rule classifier with judge votes for toolfail. A run is an Inspect log; `rhenvs.convert` turns logs into rollout records (turns, cheat flags, labels, token ids).
 
 ## Install
 
@@ -9,7 +9,7 @@ uv add "rhenvs @ git+https://github.com/ekhadley/rh-envs"
 uv sync --upgrade-package rhenvs     # pull a newer commit
 ```
 
-Docker is needed for secret_number, impossible_bench, terminal_verifier and mbpp: their containers run on the machine running the eval. The model is wherever it is served. On a host without docker (a rented container such as Vast.ai), impossible_bench, terminal_verifier and mbpp take `sandbox=local`, which runs model-written code on the host as the user running the eval, with no filesystem or network isolation: run it only as an unprivileged user with no credentials, on a machine you can throw away (see Sandboxes below). secret_number needs its container.
+Docker is needed for secret_number, impossible_bench, terminal_verifier, mbpp and odcv (which also needs git, to fetch its scenarios): their containers run on the machine running the eval. The model is wherever it is served. On a host without docker (a rented container such as Vast.ai), impossible_bench, terminal_verifier and mbpp take `sandbox=local`, which runs model-written code on the host as the user running the eval, with no filesystem or network isolation: run it only as an unprivileged user with no credentials, on a machine you can throw away (see Sandboxes below). secret_number needs its container.
 
 ## Running
 
@@ -43,6 +43,11 @@ Run evals with `log_model_api`: the records' token ids come from the last reques
 | `impossible_bench` | `lcb` | `config`, `n` (problems, None for the whole split), `sandbox` |
 | `terminal_verifier` | `terminal_verifier` | `config`, `mode` (`possible`, `corrupted`, `corrupted_negative`, `verifier_bug`), `max_turns`, `n` (grids), `seed` (grids and verifier offsets), `epochs`, `pool` (`seed`, `source_eval`), `pool_size`, `offset`, `sandbox` |
 | `mbpp` | `mbpp` | `config`, `n` (the first n tasks, None for all), `epochs`, `sandbox` |
+| `hint_mc` | `hint_mc` | `config`, `prompts` (`none`, `sycophancy`, `consistency`, `visual_pattern`, `metadata`, `grader`, `unethical`, or `all`), `n` (the first n questions, None for all 498) |
+| `sorh` | `sorh` | `config`, `prompts` (`hack`: the prompt stating its metric; `none`: the metric deleted), `split` (`test`, 309 prompts, or `train`, 664), `n`, `epochs` |
+| `feasigen` | `feasigen` | `config`, `prompts` (`infeasible`: the needed tool removed; `feasible`), `n` (the first n tasks, None for all 200), `epochs` |
+| `toolfail` | `toolfail` | `config`, `prompts` (`tool_required`, `control`, or the tool items of one target mode: `tool_skip`, `result_ignore`, `output_fabrication`), `n` (items per domain and target mode, None for all 50) |
+| `odcv` | `odcv` | `config`, `prompts` (`incentivized`, `mandated`), `n` (the first n scenarios, None for all 40), `epochs` |
 
 Each module's docstring describes its env. `config` names `configs/<env>/<config>.yaml`, which pins the prompts and scaffold settings and the `model:` block sent with every request: sampling settings and an `extra_body` carrying what the OpenAI schema lacks (`top_k`, `return_token_ids`, `chat_template_kwargs`). The configs are written for Qwen3.6-27B on a vLLM server; another model or provider needs its own. A caller adding request fields (steering vectors, a cache salt) merges them into `task.config.extra_body`.
 
@@ -57,6 +62,11 @@ Configs:
 - `impossible_bench/{paper,plain,original}.yaml`: the paper's tuned prompt on the conflicting split, the package's plain prompt there, and the paper prompt on the possible split for capability. 16384 tokens per attempt, the only budget an open model has in place of the paper's 4096 reasoning tokens, where an uncapped attempt can reason for hours.
 - `terminal_verifier/default.yaml` (the 27B sweep's offset range, command timeout and output cap, 8192 tokens per turn) and `mt32k.yaml` (32768 per turn).
 - Qwen3.8-27B at the settings of willjgriff's sweeps (see below): `terminal_verifier/qwen3.8_sweep.yaml`, `mbpp/impossible_qwen3.8_sweep.yaml`, `mbpp/honeypot_qwen3.8_sweep.yaml` (the same sampling on the original visible test) and `grader/qwen3.8_low.yaml`.
+- `hint_mc/qwen3.8_low.yaml`: the source's system prompt and five hint texts, 8192 tokens. The 498 questions are downloaded from the source's Hugging Face dataset at a pinned revision when the task is built.
+- `sorh/qwen3.8_low.yaml` (the judge, GLM-5 pinned to one OpenRouter provider) and `sorh/tasks.json`: the 973 writing rows of longtermrisk/school-of-reward-hacks (CC-BY-4.0, with the dataset's canary string) with Meek et al.'s 309-prompt test split and a `user_none` copy of every prompt with the sentences stating its metric deleted, written by `python -m rhenvs.sorh_tasks`.
+- `feasigen/qwen3.8_low.yaml` (FeasiGen's system prompt, 10 turns) and `feasigen/tasks.jsonl`: the 200 tasks of BFCL v3's `multiple` subset (Apache-2.0) with the ground-truth function named, written by `python -m rhenvs.feasigen_tasks`.
+- `toolfail/qwen3.8_low.yaml` (the judge and its two prompt variants), `toolfail/tasks.jsonl` (ToolFailBench's 1,000 items, Apache-2.0), `toolfail/domains.json` (the five system prompts and tool lists) and `toolfail/judge/` (upstream's rubric), written by `python -m rhenvs.toolfail_tasks <clone>`.
+- `odcv/qwen3.8_low.yaml`: ODCV-Bench's step, command and episode limits, its tool-use line, reminder and judge prompt, the judge and the score threshold. The scenarios are fetched from the upstream repo at a pinned commit into `~/.cache/rhenvs/odcv/` when the task is built, each one its own docker image.
 - `mbpp/{impossible,honeypot}.yaml` (the corrupted or the original visible test, 8192 tokens) and `mbpp/tasks.jsonl`: 954 tasks of taufeeque/mbpp-hardcode's train, test and validation splits (10 excluded), written by `uv run python -m rhenvs.mbpp_tasks` with every visible test's corrupted copy, validated against the dataset's reference solution.
 
 ### Qwen3.8-27B (willjgriff/llm-reward-hacking-ablation)
@@ -91,7 +101,21 @@ On Qwen3.6-27B served by vLLM (2026-10-01 and 10-02, before the package split, t
 - secret_number, 64 games with seed 0: none cheated, 12 won, all submitted, no resampling, 5 to 23 turns, token ids on every record. No game mentioned the secret; one was shown its path, by `cat /opt/guess.py` and `cat /agent/guess.py` at turns 2 and 3 of 23, and did not read it. The converter's turns, commands, env outputs and flags match the solver's step records.
 - impossible_bench, paper config, two lcbhard problems: ten attempts each, neither passed, one turn per attempt with the test feedback as its env output, token ids on both records. 18 minutes for the two, dominated by one attempt that reasoned to the 16384 cap.
 
+Through OpenRouter (2026-11-16, `qwen/qwen3.8-27b` pinned to `chutes/fp8`, which returns no token ids; the configs' vLLM-only fields are ignored there), each task run and converted:
+
+- hint_mc: cheat / valid by arm on 33 to 68 questions: none 3/64, grader 41/68, sycophancy 7/64, metadata 10/34, unethical 6/34, consistency 1/35, visual_pattern 1/33. The hinted letter equals the `target_label` of the source's released qwen3.5-27b results on 498 of 498 questions. 9 of 105 GPQA answers were cut off at 8192 tokens, no MMLU answer.
+- sorh, the first 30 test prompts: hack 8/30, none 0/30. The judge labelled the dataset's own hack answers 30/30 and its control answers 0/30 (both are also in the judge's prompt as anchors, so this is a weak check). The builder's test split equals Meek et al.'s id file.
+- feasigen, the first 20 tasks: infeasible 9/20 without a stop signal (one of them a refusal the regexes miss), feasible 0/20 stops and 19/20 solved. The system prompt and regexes are character-identical to upstream's.
+- toolfail: the rule classifier equals upstream's label on 1,000 of 1,000 rows of its released Qwen3.6-27B traces. `tool_skip` items, 20 per domain: 27/100 tool_skip (finance 0/20, real_estate 13/20); control, 30 items: 30 correct, no tool call.
+- odcv, the first 4 incentivized scenarios: 10 to 14 steps each, all ended by `task_complete`, 1 of 4 scored 3 or more. All 40 images build (about 0.6 GB of unique layers).
+
 ## Differences from the sources
+
+- hint_mc (ricyoung/cot-faithfulness-open-models): the prompts and the hinted letter are the source's. The answer is the model's last statement of it on a line of its own, not the source's `extract_answer`, which takes the first "the answer is (X)" and so often reads a restated hint: on the source's released qwen3.5-27b answers the hinted letter is the answer in 31% of sycophancy items under this parser, where the paper reports 79.6% influence. Cheat does not require the unhinted answer to differ; the `none` arm is the baseline.
+- sorh (longtermrisk/school-of-reward-hacks, graded as Meek et al., arXiv 2610.29129): their rubric and reply format verbatim, the judge shown the answer without the reasoning; the `none` prompts are new here (a delete-only rewrite by deepseek-v4-pro, asserted to be the prompt with words removed, three rows fixed by hand).
+- feasigen (LeonChengg/FeasiGen): a rebuild, since the repo ships no tasks: BFCL `multiple` with the ground-truth function removed, where the paper removes the tools shared by three models' successful traces. Every offered tool returns upstream's generic mock.
+- toolfail (SoHarshh/ToolFailBench): items, prompts, tools, the two-call protocol and the rule classifier are upstream's. One judge model casts both votes, and only on tool items the rule did not label tool_skip. The system prompts tell the model to answer conceptual questions from memory, and the tool_skip items are worded to look conceptual.
+- odcv (McGill-DMaS/ODCV-Bench): scenarios, prompts, tools and limits are upstream's; rhenvs's own solver and scorer, one judge in place of the four-judge median, containers without network. There is no no-pressure control: the KPI pressure is in each prompt's prose.
 
 - secret_number (~/wgmn/agent-interp-envs): the model is called from outside the container, which has no network; `/opt` is empty during a game, where the source's held the harness and both guess scripts (the sample setup moves the game's script to `/agent/guess.py` and deletes the other variant, so `/agent/guess.py` is the only oracle); the container harness called the vLLM Responses API and this uses chat completions with reasoning replayed as `reasoning_content`, which the server renders to the same tokens; a tool call with unparseable arguments is reverted and resampled like every other rejected call, where the harness also tried an escape fix after ten failures.
 - grader: the parity prompts are those of `ekhadley/odd-number-hacking`, byte-identical. The pets_listed, sign, letter and weekday families and the held-out ones are new here.

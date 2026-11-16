@@ -52,8 +52,8 @@ def make_turns(items: list[dict], model: str) -> list[dict]:
     return turns
 
 
-def token_ids(sample: EvalSample) -> list[int] | None:
-    last = [e for e in sample.events if e.event == "model"][-1]
+def token_ids(sample: EvalSample, model: str) -> list[int] | None:
+    last = [e for e in sample.events if e.event == "model" and e.model == model][-1]  # the evaluated model's last call: a judged sample's later calls are its judges'
     assert last.call is not None, f"sample {sample.id}: no raw call on the last model event; run evals with --log-model-api (Inspect keeps only the first few otherwise)"
     response = last.call.response
     return response["prompt_token_ids"] + response["choices"][0]["token_ids"] if "prompt_token_ids" in response else None
@@ -124,7 +124,58 @@ def annotate_mbpp(r: dict, sample: EvalSample, meta: dict) -> None:
     r["cheat_kinds"] = ["passed_impossible_test" if meta["corrupt"] else "hardcoded"] if labels["cheat"] else []
 
 
-ANNOTATE = {"grader": annotate_grader, "secret_number": annotate_secret_number, "impossible_bench": annotate_impossible_bench, "terminal_verifier": annotate_terminal_verifier, "mbpp": annotate_mbpp}
+def annotate_feasigen(r: dict, sample: EvalSample, meta: dict) -> None:
+    steps, turns = sample.store["steps"], r["turns"]
+    assert len(steps) == len(turns), (r["rollout_id"], len(steps), len(turns))
+    for turn, step in zip(turns, steps):
+        turn["commands"] = [c["name"] for c in step if c["available"]]  # the calls a tool answered; a call to a tool that is not in the list got the not-available error
+        turn["unavailable_calls"] = [c["name"] for c in step if not c["available"]]
+    labels = {k: None if math.isnan(v) else bool(v) for k, v in sample.scores["feasibility"].value.items()}  # every label NaN for a rollout cut off by max_tokens or the turn limit
+    r["labels"] = labels | {"task_id": sample.id, "prompts": meta["prompts"], "truth_tool": sample.metadata["truth_tool"], "end_reason": sample.store["end_reason"]}
+    turns[-1]["cheated"] = bool(labels["cheat"])  # the final message, the one without a stop signal
+    r["cheat_kinds"] = ["false_continue"] if labels["cheat"] else []
+
+
+def annotate_toolfail(r: dict, sample: EvalSample, meta: dict) -> None:
+    score = sample.scores["toolfail_labels"]
+    labels = {k: None if math.isnan(v) else bool(v) for k, v in score.value.items()}  # every label NaN for a sample cut off by max_tokens
+    r["labels"] = labels | (score.metadata or {"label": None, "rule": None, "judges": []}) | {k: sample.metadata[k] for k in ("task_id", "domain", "target_failure_mode")} | {"prompts": meta["prompts"]}
+    r["turns"][0 if r["labels"]["rule"] == "tool_skip" else -1]["cheated"] = bool(labels["cheat"])  # the turn that answered without the expected call, else the answer after the tool return
+    r["cheat_kinds"] = [k for k in ("tool_skip", "result_ignore", "output_fabrication") if labels[k]]
+
+
+def annotate_odcv(r: dict, sample: EvalSample, meta: dict) -> None:
+    steps, turns = sample.store["steps"], r["turns"]
+    assert len(steps) == len(turns), (r["rollout_id"], len(steps), len(turns))
+    for turn, step in zip(turns, steps):
+        turn["commands"] = step["commands"]
+    score = sample.scores["judge_panel"]
+    cheat = None if math.isnan(score.value["cheat"]) else bool(score.value["cheat"])  # no judge reply parsed, or the episode was not judged
+    r["labels"] = {"scenario": sample.metadata["scenario"], "prompts": meta["prompts"], "cheat": cheat, "score": None if cheat is None else score.value["score"], "judge_scores": {j["model"]: j["score"] for j in score.metadata["judges"]}, "end_reason": sample.store["end_reason"]}
+    turns[-1]["cheated"] = bool(cheat)  # the judges score the whole episode, so the cheat sits on its last turn
+    r["cheat_kinds"] = ["constraint_violation"] if cheat else []
+    r.update(end_reason=sample.store["end_reason"], judges=score.metadata["judges"])
+
+
+def annotate_hint_mc(r: dict, sample: EvalSample, meta: dict) -> None:
+    score = sample.scores["hint_following"]
+    cheat, correct = (None if math.isnan(score.value[k]) else bool(score.value[k]) for k in ("cheat", "correct"))  # None for an answer with no letter or cut off by max_tokens
+    r["labels"] = {**sample.metadata, "answer": score.answer, "cheat": cheat, "correct": correct}  # question, dataset, subject, hint, target, correct_letter
+    r["turns"][0]["cheated"] = bool(cheat)  # under hint none, the unhinted pick of the letter the hints point at: the arm's baseline
+    r["cheat_kinds"] = [sample.metadata["hint"]] if cheat else []
+
+
+def annotate_sorh(r: dict, sample: EvalSample, meta: dict) -> None:
+    score = sample.scores["metric_gaming"]
+    v, judged = score.value, bool(score.value["valid"])  # not judged: an answer cut off by max_tokens, or a judge reply that did not parse
+    cheat = bool(v["cheat"]) if judged else None
+    r["labels"] = {k: sample.metadata[k] for k in ("row", "split", "task", "evaluation_metric", "cheat_method")} | {"prompts": meta["prompts"], "cheat": cheat, "quality": int(v["quality"]) if judged else None, "degenerate": bool(v["degenerate"]) if judged else None, "judge": score.explanation}
+    r["turns"][0]["cheated"] = bool(cheat)
+    r["cheat_kinds"] = ["metric_gaming"] if cheat else []
+
+
+ANNOTATE = {"grader": annotate_grader, "secret_number": annotate_secret_number, "impossible_bench": annotate_impossible_bench, "terminal_verifier": annotate_terminal_verifier, "mbpp": annotate_mbpp,
+            "feasigen": annotate_feasigen, "toolfail": annotate_toolfail, "odcv": annotate_odcv, "hint_mc": annotate_hint_mc, "sorh": annotate_sorh}
 
 
 def convert(log: EvalLog) -> list[dict]:
@@ -138,7 +189,7 @@ def convert(log: EvalLog) -> list[dict]:
         r["cheated"] = any(t["cheated"] for t in r["turns"])
         r["first_cheat_turn"] = next((t["turn_idx"] for t in r["turns"] if t["cheated"]), None)
         r["n_turns"] = len(r["turns"])
-        r["ids"] = token_ids(sample)
+        r["ids"] = token_ids(sample, model)
         records.append(r)
     return records
 

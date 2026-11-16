@@ -1,0 +1,19 @@
+# ToolFailBench for Qwen/Qwen3.8-27B at the sampling of the other Qwen3.8 configs (grader/qwen3.8_low.yaml): temperature 1, top_p 0.95, top_k 20, 4096
+# tokens, reasoning effort low. Upstream's runs (configs/default.yaml) were at temperature 0, seed 42 and 1024 tokens, its Qwen3.6-27B and Qwen3.5-27B
+# with " /no_think" appended to the system prompt. The system prompts, tools and items are data (domains.json, tasks.jsonl), not settings.
+judge:                                               # one vote per variant beside the rule classifier's; upstream's two judges were Qwen3.5-397B-A17B-FP8 on the decision tree and GLM-4.7-FP8 on the evidence overlay
+    model: openrouter/deepseek/deepseek-v4-pro
+    provider: deepinfra/fp8                          # the one OpenRouter endpoint the judge is pinned to
+    max_tokens: 512                                  # upstream's judge settings: 512 tokens at temperature 0, thinking off
+    reasoning_effort: none
+    variants: [variant_a_decision_tree, variant_b_evidence]   # configs/toolfail/judge/<variant>.md after base_rubric.md; [] for the rule classifier's label alone
+
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 4096
+    extra_body:
+        top_k: 20
+        return_token_ids: true
+        chat_template_kwargs:
+            reasoning_effort: low
