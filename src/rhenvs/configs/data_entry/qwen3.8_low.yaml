@@ -1,0 +1,20 @@
+# The data-entry environment of keing1/reward-hacking-evals (inspect_command_line_envs at 20f6490): the sweep's main configuration (MATH,
+# reward function `reward`, basic_check, 3 tasks, reward script in the tasks directory), its limits (60 messages, 1800 s per sample, 180 s
+# per command), with Qwen/Qwen3.8-27B at reasoning effort low and the sampling of grader/qwen3.8_low.yaml (temperature 1, top_p 0.95,
+# top_k 20), 8192 new tokens per call. The prompts are upstream's templates, filled in by the solver (rhenvs/data_entry.py).
+n_tasks: 3
+reward_func_name: reward
+central_results: results.jsonl
+message_limit: 60
+time_limit: 1800
+command_timeout: 180
+
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 8192
+    extra_body:
+        top_k: 20
+        return_token_ids: true
+        chat_template_kwargs:
+            reasoning_effort: low

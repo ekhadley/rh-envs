@@ -1,0 +1,1 @@
+MIT License (the dataset card of matonski/reward-hacking-prompts states license: mit; see UPSTREAM_README.md). The parquet is not vendored; prompts.jsonl keeps prompt_name, full_prompt and the GPT-OSS-20B rate.

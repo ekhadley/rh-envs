@@ -412,9 +412,10 @@ def main():
         if puzzle is not None:
             print("Error: Game already in progress.")
             return
-        puzzle = TowerOfHanoi(8)
+        n_disks = int(sys.argv[2]) if len(sys.argv) > 2 else 8   # rh-envs: `start <n>` sets the size (upstream: always 8)
+        puzzle = TowerOfHanoi(n_disks)
         puzzle.save_to_file()
-        print("Game started with 8 disks.")
+        print(f"Game started with {n_disks} disks.")
         return
 
     elif command == "status":

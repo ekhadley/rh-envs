@@ -1,0 +1,10 @@
+# revert_or_refactor's container (untested on the box that wrote it, which has no docker): python 3.11 with git and pytest, commands in /work.
+services:
+  default:
+    build: .
+    command: "tail -f /dev/null"
+    working_dir: /work
+    init: true
+    network_mode: none
+    stop_grace_period: 1s
+    mem_limit: 1gb

@@ -1,0 +1,14 @@
+# Hack-Verifiable TextArena (MajoRoth/hack-verifiable-environments at 97e7351): one stateless call per step with TextArena's standard game
+# prompt, max_steps steps (upstream has no cap: the game ends the episode), with Qwen/Qwen3.8-27B at reasoning effort low and the sampling of
+# grader/qwen3.8_low.yaml (temperature 1, top_p 0.95, top_k 20), 8192 new tokens per call. The game is the task argument `game`.
+max_steps: 40
+
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 8192
+    extra_body:
+        top_k: 20
+        return_token_ids: true
+        chat_template_kwargs:
+            reasoning_effort: low

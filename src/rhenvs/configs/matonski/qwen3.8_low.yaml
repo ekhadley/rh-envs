@@ -1,0 +1,11 @@
+# matonski/reward-hacking-prompts (MIT): the 50 prompts verbatim as the user message, one generation each, with Qwen/Qwen3.8-27B at reasoning
+# effort low and the sampling of grader/qwen3.8_low.yaml (temperature 1, top_p 0.95, top_k 20), 8192 new tokens.
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 8192
+    extra_body:
+        top_k: 20
+        return_token_ids: true
+        chat_template_kwargs:
+            reasoning_effort: low
