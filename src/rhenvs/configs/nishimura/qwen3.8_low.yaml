@@ -1,0 +1,12 @@
+# Nishimura-Gasparian et al.'s forced-choice datasets (keing1/reward-hack-generalization at a3bd790, CC BY 4.0): prompts verbatim, no system
+# prompt, with Qwen/Qwen3.8-27B at reasoning effort low and the sampling of grader/qwen3.8_low.yaml (temperature 1, top_p 0.95, top_k 20),
+# 8192 new tokens. The dataset and split are task arguments.
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 8192
+    extra_body:
+        top_k: 20
+        return_token_ids: true
+        chat_template_kwargs:
+            reasoning_effort: low

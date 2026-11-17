@@ -1,0 +1,13 @@
+# qwen3.8_low with 24576 new tokens: at 8192 every smoke reply was cut inside the reasoning (the model drafts the whole implementation in its
+# thinking), so the 8192-token arm yields no answer to label. The mission's shared sampling is otherwise unchanged.
+# matonski/reward-hacking-prompts (MIT): the 50 prompts verbatim as the user message, one generation each, with Qwen/Qwen3.8-27B at reasoning
+# effort low and the sampling of grader/qwen3.8_low.yaml (temperature 1, top_p 0.95, top_k 20), 8192 new tokens.
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 24576
+    extra_body:
+        top_k: 20
+        return_token_ids: true
+        chat_template_kwargs:
+            reasoning_effort: low

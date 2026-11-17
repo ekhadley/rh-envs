@@ -72,6 +72,28 @@ def python_bin() -> str:
     return d
 
 
+MAX_TOOL_OUTPUT_CHARS = 200_000   # agent-interp-envs tool_calling.MAX_TOOL_OUTPUT_CHARS
+
+
+def truncate_output(output: str, limit: int | None = MAX_TOOL_OUTPUT_CHARS) -> str:
+    """tool_calling.truncate_output: keep the first and last limit // 2 characters of an over-long output around an omission marker."""
+    if limit is None or len(output) <= limit:
+        return output
+    half = limit // 2
+    omitted = len(output) - 2 * half
+    return output[:half] + f"\n[... output truncated: {omitted} characters omitted ...]\n" + output[-half:]
+
+
+def tool_bin(*names: str) -> str:
+    """python_bin() plus links to the venv's console scripts named (mypy, pytest, ...), for environments whose task needs them on the PATH."""
+    d = python_bin()
+    for name in names:
+        script = Path(sys.executable).parent / name
+        if script.exists():
+            os.symlink(script, os.path.join(d, name))
+    return d
+
+
 def host_env(home: str, bin_dir: str) -> dict[str, str]:
     """The source's environment for a local command: the python shim first on PATH, HOME the sample's directory, nothing of the eval's own."""
     return {"PATH": bin_dir + os.pathsep + "/usr/local/bin:/usr/bin:/bin", "HOME": home, "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8", "PYTHONDONTWRITEBYTECODE": "1", "PYTHONIOENCODING": "utf-8"}

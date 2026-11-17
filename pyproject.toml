@@ -12,9 +12,17 @@ dependencies = [
     "huggingface-hub>=1.0",
     "impossiblebench @ git+https://github.com/safety-research/impossiblebench@061dc3d",
     "inspect-ai>=0.3.273",
+    "loguru>=0.8.0",
+    "mypy==1.20.2",
+    "nltk>=3.10.4",
     "omegaconf>=2.3.1",
     "openai>=3.22.1",
+    "pandas>=3.0.6",
+    "pytest>=9.2.0",
     "reasoning-gym>=0.1.25",
+    "textarena==0.7.4",
+    "types-pyyaml==6.0.12.20260518",
+    "types-requests==2.33.0.20260518",
 ]
 
 [build-system]
