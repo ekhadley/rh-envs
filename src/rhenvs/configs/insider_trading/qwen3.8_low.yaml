@@ -1,0 +1,20 @@
+# Qwen/Qwen3.8-27B at reasoning effort low, the sampling of grader/qwen3.8_low.yaml (temperature 1, top_p 0.95, top_k 20) with 8192 new tokens per call:
+# Apollo sampled gpt-4 at temperature 0.9, top_p 0.95 and 384 tokens, which a reasoning model can spend before it reaches its action.
+# The judge is the GLM-5 of sorh/qwen3.8_low.yaml (OpenRouter, pinned to z-ai/fp8) at temperature 0, in place of the gpt-4o of the Inspect port;
+# its two calls (the report and the answer to Amy) use the classification prompts of the port verbatim.
+judge:
+    model: z-ai/glm-5
+    provider: z-ai/fp8
+    max_tokens: 8192
+    max_connections: 32
+    attempts: 3                # a reply naming neither label is asked again
+
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 8192
+    extra_body:
+        top_k: 20
+        return_token_ids: true
+        chat_template_kwargs:
+            reasoning_effort: low

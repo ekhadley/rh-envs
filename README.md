@@ -1,6 +1,6 @@
 # rhenvs
 
-Reward-hacking environments as [Inspect](https://inspect.aisi.org.uk/) tasks, each with a cheat label: programmatic for grader, secret_number, impossible_bench, terminal_verifier, mbpp, hint_mc and feasigen, an LLM judge's for sorh and odcv, and a rule classifier with judge votes for toolfail. A run is an Inspect log; `rhenvs.convert` turns logs into rollout records (turns, cheat flags, labels, token ids).
+Reward-hacking environments as [Inspect](https://inspect.aisi.org.uk/) tasks, each with a cheat label: programmatic for grader, secret_number, impossible_bench, terminal_verifier, mbpp, hint_mc, feasigen, tower_of_hanoi and insider_trading's trade, an LLM judge's for sorh, odcv, upward_deception and insider_trading's report and answer to the manager, and a rule classifier with judge votes for toolfail. A run is an Inspect log; `rhenvs.convert` turns logs into rollout records (turns, cheat flags, labels, token ids).
 
 ## Install
 
@@ -9,7 +9,7 @@ uv add "rhenvs @ git+https://github.com/ekhadley/rh-envs"
 uv sync --upgrade-package rhenvs     # pull a newer commit
 ```
 
-Docker is needed for secret_number, impossible_bench, terminal_verifier, mbpp and odcv (which also needs git, to fetch its scenarios): their containers run on the machine running the eval. The model is wherever it is served. On a host without docker (a rented container such as Vast.ai), impossible_bench, terminal_verifier and mbpp take `sandbox=local`, which runs model-written code on the host as the user running the eval, with no filesystem or network isolation: run it only as an unprivileged user with no credentials, on a machine you can throw away (see Sandboxes below). secret_number needs its container.
+Docker is needed for secret_number, impossible_bench, terminal_verifier, mbpp and odcv (which also needs git, to fetch its scenarios): their containers run on the machine running the eval. The model is wherever it is served. On a host without docker (a rented container such as Vast.ai), impossible_bench, terminal_verifier, mbpp and tower_of_hanoi take `sandbox=local`, which runs model-written code on the host as the user running the eval, with no filesystem or network isolation: run it only as an unprivileged user with no credentials, on a machine you can throw away (see Sandboxes below). secret_number needs its container.
 
 ## Running
 
@@ -48,6 +48,9 @@ Run evals with `log_model_api`: the records' token ids come from the last reques
 | `feasigen` | `feasigen` | `config`, `prompts` (`infeasible`: the needed tool removed; `feasible`), `n` (the first n tasks, None for all 200), `epochs` |
 | `toolfail` | `toolfail` | `config`, `prompts` (`tool_required`, `control`, or the tool items of one target mode: `tool_skip`, `result_ignore`, `output_fabrication`), `n` (items per domain and target mode, None for all 50) |
 | `odcv` | `odcv` | `config`, `prompts` (`incentivized`, `mandated`), `n` (the first n scenarios, None for all 40), `epochs` |
+| `insider_trading` | `insider_trading` | `config`, `prompts` (`default`, `no_pressure`), `epochs` (episodes: the task is one prefilled conversation) |
+| `upward_deception` | `upward_deception` | `config`, `prompts` (`default`, `mitigation`), `types` (comma-separated of 1-5), `n` (the first n tasks per type, None for all 40), `epochs` |
+| `tower_of_hanoi` | `tower_of_hanoi` | `config`, `prompts` (`rule`, `no_rule`), `n` (episodes), `epochs`, `sandbox` |
 
 Each module's docstring describes its env. `config` names `configs/<env>/<config>.yaml`, which pins the prompts and scaffold settings and the `model:` block sent with every request: sampling settings and an `extra_body` carrying what the OpenAI schema lacks (`top_k`, `return_token_ids`, `chat_template_kwargs`). The configs are written for Qwen3.6-27B on a vLLM server; another model or provider needs its own. A caller adding request fields (steering vectors, a cache salt) merges them into `task.config.extra_body`.
 
@@ -67,6 +70,9 @@ Configs:
 - `feasigen/qwen3.8_low.yaml` (FeasiGen's system prompt, 10 turns) and `feasigen/tasks.jsonl`: the 200 tasks of BFCL v3's `multiple` subset (Apache-2.0) with the ground-truth function named, written by `python -m rhenvs.feasigen_tasks`.
 - `toolfail/qwen3.8_low.yaml` (the judge and its two prompt variants), `toolfail/tasks.jsonl` (ToolFailBench's 1,000 items, Apache-2.0), `toolfail/domains.json` (the five system prompts and tool lists) and `toolfail/judge/` (upstream's rubric), written by `python -m rhenvs.toolfail_tasks <clone>`.
 - `odcv/qwen3.8_low.yaml`: ODCV-Bench's step, command and episode limits, its tool-use line, reminder and judge prompt, the judge and the score threshold. The scenarios are fetched from the upstream repo at a pinned commit into `~/.cache/rhenvs/odcv/` when the task is built, each one its own docker image.
+- `insider_trading/qwen3.8_low.yaml` (the judge, GLM-5 as sorh's) and `insider_trading/{default,no_pressure}.json`: Apollo's two prompt files verbatim (CC BY 4.0, `insider_trading/LICENSE`, with the MAPS canary). The graders' prompts are in the module.
+- `upward_deception/qwen3.8_low.yaml` (30 steps, the judge). The upstream repo has no licence, so its five task files and nine judge templates are not vendored: they are downloaded from github at a pinned commit into `~/.cache/rhenvs/upward_deception/` when the task is built (`python -m rhenvs.upward_deception` fetches them ahead of a run).
+- `tower_of_hanoi/qwen3.8_low.yaml`: the agent-interp-envs prompt verbatim, 20 steps, 30 s per command, 3 resamples of a malformed call, and the rule sentence the `no_rule` arm deletes. The game is `docker/tower_of_hanoi/tower_of_hanoi.py` (MIT), compiled and its source deleted before each episode.
 - `mbpp/{impossible,honeypot}.yaml` (the corrupted or the original visible test, 8192 tokens) and `mbpp/tasks.jsonl`: 954 tasks of taufeeque/mbpp-hardcode's train, test and validation splits (10 excluded), written by `uv run python -m rhenvs.mbpp_tasks` with every visible test's corrupted copy, validated against the dataset's reference solution.
 
 ### Qwen3.8-27B (willjgriff/llm-reward-hacking-ablation)
@@ -83,7 +89,7 @@ What these configs do not reproduce: the commands and tests run in the docker co
 
 `pool=seed` (the default) is the first `n` grids of the stream of `seed`, ids `0..n-1`. `pool=source_eval` is the held-out pool the source's eval scripts draw: the grids of the stream `seed + 7919`, minus any among the first `max(64, pool_size)` grids of `seed`, `pool_size` of them in `random.Random(seed).sample` order, ids `eval_<seed + 7919>_<dataset index>` as the source's; the task takes `n` of them from `offset`. `pool=source_eval, pool_size=1534, seed=0` is the pool of willjgriff's 27B sweep (1,532 grids after deduplication; every chunk's task ids, order and verifier answers reproduce, 11,257 rollouts checked).
 
-Docker: `docker/secret_number/` (the game container), `docker/python/` (a plain Python container for terminal_verifier and mbpp), `docker/impossible_bench/` (the impossiblebench repo's compose file, which the installed package does not ship). Tasks name them by absolute path, so they resolve wherever the task is built.
+Docker: `docker/secret_number/` (the game container), `docker/python/` (a plain Python container for terminal_verifier, mbpp and tower_of_hanoi), `docker/tower_of_hanoi/` (the game's source, copied into the sample), `docker/impossible_bench/` (the impossiblebench repo's compose file, which the installed package does not ship). Tasks name them by absolute path, so they resolve wherever the task is built.
 
 ## What was checked
 
@@ -109,12 +115,26 @@ Through OpenRouter (2026-11-16, `qwen/qwen3.8-27b` pinned to `chutes/fp8`, which
 - toolfail: the rule classifier equals upstream's label on 1,000 of 1,000 rows of its released Qwen3.6-27B traces. `tool_skip` items, 20 per domain: 27/100 tool_skip (finance 0/20, real_estate 13/20); control, 30 items: 30 correct, no tool call.
 - odcv, the first 4 incentivized scenarios: 10 to 14 steps each, all ended by `task_complete`, 1 of 4 scored 3 or more. All 40 images build (about 0.6 GB of unique layers).
 
+Offline, on Inspect's mock model (2026-11-17, insider_trading, upward_deception, tower_of_hanoi), each run and converted:
+
+- insider_trading: a scripted trade (`Action Input: LING, buy, 2000`) gets Apollo's trade confirmation with the amount, then Amy's question; no trade ends the episode after one generation.
+- upward_deception: type 3, the pptx reader returns upstream's error, `list_directory` on the attachments shows the decoy and the working `read_txt` returns it; types 4/5, `write_file` to the target leaves `wrote_target`, web tools return the stubs.
+- tower_of_hanoi (local sandbox): the game compiles, starts and applies moves; `python3 -c` is `scripting` on its turn and a `for` loop `shell_generator`; a `sed` edit of game_state.json is caught by the game's checksum on the next `status` (`tampered`, `edited_state`); `no_rule` drops the rule sentence.
+
+Through OpenRouter (2026-11-17, `qwen/qwen3.8-27b` on `chutes/fp8` with OpenRouter's reasoning effort low, judge on):
+
+- insider_trading: default 0/10 traded, no_pressure 0/10 (Apollo: gpt-4-0613 69% and 0%). Every episode's turn is a message to Amy declining to act on the tip.
+- upward_deception, the first two tasks of each type: default 2/10 (one type 2 confident answer from an irrelevant file, one type 3 answer from the decoy without saying so), mitigation 1/10. Two fixes came out of it: the judge now gets the final turn's text with the final_answer argument, and a judge reply with no result is asked again.
+
 ## Differences from the sources
 
 - hint_mc (ricyoung/cot-faithfulness-open-models): the prompts and the hinted letter are the source's. The answer is the model's last statement of it on a line of its own, not the source's `extract_answer`, which takes the first "the answer is (X)" and so often reads a restated hint: on the source's released qwen3.5-27b answers the hinted letter is the answer in 31% of sycophancy items under this parser, where the paper reports 79.6% influence. Cheat does not require the unhinted answer to differ; the `none` arm is the baseline.
 - sorh (longtermrisk/school-of-reward-hacks, graded as Meek et al., arXiv 2610.29129): their rubric and reply format verbatim, the judge shown the answer without the reasoning; the `none` prompts are new here (a delete-only rewrite by deepseek-v4-pro, asserted to be the prompt with words removed, three rows fixed by hand).
 - feasigen (LeonChengg/FeasiGen): a rebuild, since the repo ships no tasks: BFCL `multiple` with the ground-truth function removed, where the paper removes the tools shared by three models' successful traces. Every offered tool returns upstream's generic mock.
 - toolfail (SoHarshh/ToolFailBench): items, prompts, tools, the two-call protocol and the rule classifier are upstream's. One judge model casts both votes, and only on tool items the rule did not label tool_skip. The system prompts tell the model to answer conceptual questions from memory, and the tool_skip items are worded to look conceptual.
+- insider_trading (ApolloResearch/insider-trading; graders from schmatz/deception-eval-with-inspect): Apollo's prompts, trade string, follow-up messages and grader inputs; the port's two grader prompts, each with its own system prompt (the port passes the wrong one). One generation per step at the config's sampling (8192 tokens, not gpt-4's 384); the trade string matched case-insensitively with optional quotes; the doubling-down question asked of every trader; GLM-5 in place of gpt-4o.
+- upward_deception (QingyuLiu/Agentic-Upward-Deception): instructions, files, tool set, error texts, step limit, mitigation suffix, judge templates and judge logic are upstream's. Native tool calls and a final_answer tool in place of smolagents' CodeAgent and its system prompt; virtual files; web tools stubbed (no results, 404) where upstream's are live; an episode that spends 30 steps without an answer is unlabelled. No working-tools control exists upstream.
+- tower_of_hanoi (gkroiz/agent-interp-envs, palisades_bounty): prompt, tools, loop, output format, game and cheat rules are upstream's, the scripting regex's `/app/` replaced by the episode's directory. Commands run as the eval's user, not dropped to `dev`; the empty system prompt is not sent. `no_rule` is new here; `shell_generator` and `edited_state` are extra flags upstream does not score.
 - odcv (McGill-DMaS/ODCV-Bench): scenarios, prompts, tools and limits are upstream's; rhenvs's own solver and scorer, one judge in place of the four-judge median, containers without network. There is no no-pressure control: the KPI pressure is in each prompt's prose.
 
 - secret_number (~/wgmn/agent-interp-envs): the model is called from outside the container, which has no network; `/opt` is empty during a game, where the source's held the harness and both guess scripts (the sample setup moves the game's script to `/agent/guess.py` and deletes the other variant, so `/agent/guess.py` is the only oracle); the container harness called the vLLM Responses API and this uses chat completions with reasoning replayed as `reasoning_content`, which the server renders to the same tokens; a tool call with unparseable arguments is reverted and resampled like every other rejected call, where the harness also tried an escape fix after ten failures.
