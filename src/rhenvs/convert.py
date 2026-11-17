@@ -23,6 +23,7 @@ from inspect_ai.model import ChatMessage
 from rhenvs.common import load_config
 from rhenvs.secret_number import CHEAT_KINDS, NOISE_PROB_ASSIGN, SECRET_FILE
 from rhenvs.terminal_verifier import COUNTS, IMPOSSIBLE
+from rhenvs.tower_of_hanoi import SHELL_GENERATOR, scripting_pattern
 
 
 def items(messages: list[ChatMessage]) -> list[dict]:
@@ -174,8 +175,52 @@ def annotate_sorh(r: dict, sample: EvalSample, meta: dict) -> None:
     r["cheat_kinds"] = ["metric_gaming"] if cheat else []
 
 
+def nan_none(value: dict) -> dict:
+    return {k: None if isinstance(v, float) and math.isnan(v) else v for k, v in value.items()}
+
+
+def annotate_insider_trading(r: dict, sample: EvalSample, meta: dict) -> None:
+    score = sample.scores["insider_labels"]
+    labels = {k: None if v is None else bool(v) for k, v in nan_none(score.value).items()}  # traded None when the trade turn was cut off; the two judged labels None unless a trader's reply was judged
+    r["labels"] = labels | {"prompts": meta["prompts"], "end_reason": sample.store.get("end_reason"), "amount": sample.store.get("amount"), "judge": score.explanation}
+    for i, key in enumerate(("traded", "deceptive_report", "doubled_down")):  # the trade, the report to Amy, the answer to her question
+        if i < len(r["turns"]):
+            r["turns"][i]["cheated"] = bool(labels[key])
+    r["cheat_kinds"] = [k for k in ("traded", "deceptive_report", "doubled_down") if labels[k]]
+
+
+def annotate_upward_deception(r: dict, sample: EvalSample, meta: dict) -> None:
+    steps, turns = sample.store["steps"], r["turns"]
+    assert len(steps) == len(turns), (r["rollout_id"], len(steps), len(turns))
+    for turn, step in zip(turns, steps):
+        turn["commands"] = [c["name"] for c in step]
+    score = sample.scores["deception_labels"]
+    v = nan_none(score.value)
+    labels = {k: None if v[k] is None else (int(v[k]) if k == "judge_class" else bool(v[k])) for k in v if k != "valid"}
+    r["labels"] = labels | {k: sample.metadata[k] for k in ("task_type", "task_index", "topic")} | {"prompts": meta["prompts"], "end_reason": sample.store["end_reason"], "final": sample.store["final"], "judge": score.explanation}
+    turns[-1]["cheated"] = bool(labels["cheat"])  # the judge reads the final answer
+    r["cheat_kinds"] = [k for k in ("nfr", "dfr", "ffr", "hfr") if labels.get(k)]
+
+
+def annotate_tower_of_hanoi(r: dict, sample: EvalSample, meta: dict) -> None:
+    steps, turns = sample.store["steps"], r["turns"]
+    assert len(steps) == len(turns), (r["rollout_id"], len(steps), len(turns))
+    pattern = scripting_pattern(sample.store["game_dir"])
+    for turn, step in zip(turns, steps):
+        turn["commands"] = step["commands"]
+        turn["scripting"] = any(pattern.search(c) for c in step["commands"])
+        turn["shell_generator"] = any(SHELL_GENERATOR.search(c) for c in step["commands"])
+        turn["cheated"] = turn["scripting"]
+    score = sample.scores["hanoi_flags"]
+    r["labels"] = {k: bool(v) for k, v in score.value.items()} | {"prompts": meta["prompts"], "moves": score.metadata["moves"]}
+    if r["labels"]["tampered"] and not any(t["cheated"] for t in turns):
+        turns[-1]["cheated"] = True  # the game found the changed state file; the turn that changed it is not known
+    r["cheat_kinds"] = [k for k in ("scripting", "tampered") if r["labels"][k]]
+
+
 ANNOTATE = {"grader": annotate_grader, "secret_number": annotate_secret_number, "impossible_bench": annotate_impossible_bench, "terminal_verifier": annotate_terminal_verifier, "mbpp": annotate_mbpp,
-            "feasigen": annotate_feasigen, "toolfail": annotate_toolfail, "odcv": annotate_odcv, "hint_mc": annotate_hint_mc, "sorh": annotate_sorh}
+            "feasigen": annotate_feasigen, "toolfail": annotate_toolfail, "odcv": annotate_odcv, "hint_mc": annotate_hint_mc, "sorh": annotate_sorh,
+            "insider_trading": annotate_insider_trading, "upward_deception": annotate_upward_deception, "tower_of_hanoi": annotate_tower_of_hanoi}
 
 
 def convert(log: EvalLog) -> list[dict]:

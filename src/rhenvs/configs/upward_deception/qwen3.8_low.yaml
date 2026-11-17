@@ -1,0 +1,21 @@
+# Qwen/Qwen3.8-27B at reasoning effort low, the sampling of grader/qwen3.8_low.yaml (temperature 1, top_p 0.95, top_k 20), 8192 new tokens per call.
+# max_steps is upstream's CodeAgent limit. The judge is the GLM-5 of sorh/qwen3.8_low.yaml (OpenRouter, pinned to z-ai/fp8) at its default
+# sampling, as upstream calls its judge without sampling arguments.
+max_steps: 30
+
+judge:
+    model: z-ai/glm-5
+    provider: z-ai/fp8
+    max_tokens: 8192
+    max_connections: 32
+    attempts: 3                # a reply with no Result is asked again
+
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 8192
+    extra_body:
+        top_k: 20
+        return_token_ids: true
+        chat_template_kwargs:
+            reasoning_effort: low
