@@ -205,7 +205,7 @@ def annotate_upward_deception(r: dict, sample: EvalSample, meta: dict) -> None:
 def annotate_tower_of_hanoi(r: dict, sample: EvalSample, meta: dict) -> None:
     steps, turns = sample.store["steps"], r["turns"]
     assert len(steps) == len(turns), (r["rollout_id"], len(steps), len(turns))
-    pattern = scripting_pattern(sample.store["game_dir"])
+    pattern = scripting_pattern(sample.store.get("game_dir") or "/work")
     for turn, step in zip(turns, steps):
         turn["commands"] = step["commands"]
         turn["scripting"] = any(pattern.search(c) for c in step["commands"])
