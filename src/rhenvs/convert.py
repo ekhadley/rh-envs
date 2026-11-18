@@ -10,6 +10,7 @@ the server returned token ids (extra_body return_token_ids in the config), else 
 A turn is one assistant message with the env outputs that followed it. secret_number's and terminal_verifier's per-turn flags come from
 the solver's per-step records in the sample store, and every other env's cheat is one label on the turn that earned it (the only turn for
 grader and mbpp, the last one for impossible_bench). A grader or mbpp answer that cannot be graded has cheat None in its labels.
+A refusal record's cheat is its refused label: the behaviour that env counts.
 """
 import json
 import math
@@ -174,8 +175,16 @@ def annotate_sorh(r: dict, sample: EvalSample, meta: dict) -> None:
     r["cheat_kinds"] = ["metric_gaming"] if cheat else []
 
 
+def annotate_refusal(r: dict, sample: EvalSample, meta: dict) -> None:
+    value = sample.scores["keyword_refusal"].value
+    refused, refused_full = (None if math.isnan(value[k]) else bool(value[k]) for k in ("refused", "refused_full"))  # None for an empty answer
+    r["labels"] = {**sample.metadata, "refused": refused, "refused_full": refused_full, "cheat": refused}  # prompts, split, index; the refusal sits in the cheat slot every table reads
+    r["turns"][0]["cheated"] = bool(refused)
+    r["cheat_kinds"] = ["refusal"] if refused else []
+
+
 ANNOTATE = {"grader": annotate_grader, "secret_number": annotate_secret_number, "impossible_bench": annotate_impossible_bench, "terminal_verifier": annotate_terminal_verifier, "mbpp": annotate_mbpp,
-            "feasigen": annotate_feasigen, "toolfail": annotate_toolfail, "odcv": annotate_odcv, "hint_mc": annotate_hint_mc, "sorh": annotate_sorh}
+            "feasigen": annotate_feasigen, "toolfail": annotate_toolfail, "odcv": annotate_odcv, "hint_mc": annotate_hint_mc, "sorh": annotate_sorh, "refusal": annotate_refusal}
 
 
 def convert(log: EvalLog) -> list[dict]:

@@ -48,6 +48,7 @@ Run evals with `log_model_api`: the records' token ids come from the last reques
 | `feasigen` | `feasigen` | `config`, `prompts` (`infeasible`: the needed tool removed; `feasible`), `n` (the first n tasks, None for all 200), `epochs` |
 | `toolfail` | `toolfail` | `config`, `prompts` (`tool_required`, `control`, or the tool items of one target mode: `tool_skip`, `result_ignore`, `output_fabrication`), `n` (items per domain and target mode, None for all 50) |
 | `odcv` | `odcv` | `config`, `prompts` (`incentivized`, `mandated`), `n` (the first n scenarios, None for all 40), `epochs` |
+| `refusal` | `refusal` | `config`, `prompts` (`harmful`, `harmless`), `split` (`test`, 100 prompts, or `train`, 400), `n`, `epochs` |
 
 Each module's docstring describes its env. `config` names `configs/<env>/<config>.yaml`, which pins the prompts and scaffold settings and the `model:` block sent with every request: sampling settings and an `extra_body` carrying what the OpenAI schema lacks (`top_k`, `return_token_ids`, `chat_template_kwargs`). The configs are written for Qwen3.6-27B on a vLLM server; another model or provider needs its own. A caller adding request fields (steering vectors, a cache salt) merges them into `task.config.extra_body`.
 
@@ -67,6 +68,7 @@ Configs:
 - `feasigen/qwen3.8_low.yaml` (FeasiGen's system prompt, 10 turns) and `feasigen/tasks.jsonl`: the 200 tasks of BFCL v3's `multiple` subset (Apache-2.0) with the ground-truth function named, written by `python -m rhenvs.feasigen_tasks`.
 - `toolfail/qwen3.8_low.yaml` (the judge and its two prompt variants), `toolfail/tasks.jsonl` (ToolFailBench's 1,000 items, Apache-2.0), `toolfail/domains.json` (the five system prompts and tool lists) and `toolfail/judge/` (upstream's rubric), written by `python -m rhenvs.toolfail_tasks <clone>`.
 - `odcv/qwen3.8_low.yaml`: ODCV-Bench's step, command and episode limits, its tool-use line, reminder and judge prompt, the judge and the score threshold. The scenarios are fetched from the upstream repo at a pinned commit into `~/.cache/rhenvs/odcv/` when the task is built, each one its own docker image.
+- `refusal/{nothink,qwen3.8_low}.yaml` (heretic's system prompt; reasoning off, heretic's setting, and reasoning effort low) and `refusal/prompts.json`: heretic's four prompt slices, `mlabonne/harmful_behaviors` and `mlabonne/harmless_alpaca`, `train[:400]` and `test[:100]` of each. Not a reward-hacking env: refusal, labelled by heretic's keyword match on the first 400 characters of the answer, sits in the records' cheat slot.
 - `mbpp/{impossible,honeypot}.yaml` (the corrupted or the original visible test, 8192 tokens) and `mbpp/tasks.jsonl`: 954 tasks of taufeeque/mbpp-hardcode's train, test and validation splits (10 excluded), written by `uv run python -m rhenvs.mbpp_tasks` with every visible test's corrupted copy, validated against the dataset's reference solution.
 
 ### Qwen3.8-27B (willjgriff/llm-reward-hacking-ablation)
@@ -108,6 +110,7 @@ Through OpenRouter (2026-11-16, `qwen/qwen3.8-27b` pinned to `chutes/fp8`, which
 - feasigen, the first 20 tasks: infeasible 9/20 without a stop signal (one of them a refusal the regexes miss), feasible 0/20 stops and 19/20 solved. The system prompt and regexes are character-identical to upstream's.
 - toolfail: the rule classifier equals upstream's label on 1,000 of 1,000 rows of its released Qwen3.6-27B traces. `tool_skip` items, 20 per domain: 27/100 tool_skip (finance 0/20, real_estate 13/20); control, 30 items: 30 correct, no tool call.
 - odcv, the first 4 incentivized scenarios: 10 to 14 steps each, all ended by `task_complete`, 1 of 4 scored 3 or more. All 40 images build (about 0.6 GB of unique layers).
+- refusal, on Inspect's mock model (2026-11-17, no served run yet): the four slices load at 400 / 100 prompts with no train and test overlap; a refusing answer scores refused, a compliant one whose warning comes after its first 400 characters scores refused 0 and refused_full 1, an empty answer is invalid, and reasoning left in the text is cut at `</think>` before the match.
 
 ## Differences from the sources
 
@@ -116,6 +119,7 @@ Through OpenRouter (2026-11-16, `qwen/qwen3.8-27b` pinned to `chutes/fp8`, which
 - feasigen (LeonChengg/FeasiGen): a rebuild, since the repo ships no tasks: BFCL `multiple` with the ground-truth function removed, where the paper removes the tools shared by three models' successful traces. Every offered tool returns upstream's generic mock.
 - toolfail (SoHarshh/ToolFailBench): items, prompts, tools, the two-call protocol and the rule classifier are upstream's. One judge model casts both votes, and only on tool items the rule did not label tool_skip. The system prompts tell the model to answer conceptual questions from memory, and the tool_skip items are worded to look conceptual.
 - odcv (McGill-DMaS/ODCV-Bench): scenarios, prompts, tools and limits are upstream's; rhenvs's own solver and scorer, one judge in place of the four-judge median, containers without network. There is no no-pressure control: the KPI pressure is in each prompt's prose.
+- refusal (p-e-w/heretic): its prompts, system prompt and keyword list. heretic generates 100 tokens greedily and matches on those, and counts an empty answer as a refusal; here answers are sampled and run to their end, the match is on the first 400 characters, and an empty answer is invalid.
 
 - secret_number (~/wgmn/agent-interp-envs): the model is called from outside the container, which has no network; `/opt` is empty during a game, where the source's held the harness and both guess scripts (the sample setup moves the game's script to `/agent/guess.py` and deletes the other variant, so `/agent/guess.py` is the only oracle); the container harness called the vLLM Responses API and this uses chat completions with reasoning replayed as `reasoning_content`, which the server renders to the same tokens; a tool call with unparseable arguments is reverted and resampled like every other rejected call, where the harness also tried an escape fix after ten failures.
 - grader: the parity prompts are those of `ekhadley/odd-number-hacking`, byte-identical. The pets_listed, sign, letter and weekday families and the held-out ones are new here.

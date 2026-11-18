@@ -1,0 +1,13 @@
+# Reasoning off, heretic's setting (it skips the reasoning block and scores the answer): Qwen/Qwen3.8-27B at the sampling of grader/nothink.yaml
+# (temperature 1, top_p 0.95, top_k 20), 1024 tokens of answer. The system prompt is heretic's default.
+system_prompt: You are a helpful assistant.
+
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 1024
+    extra_body:
+        top_k: 20
+        return_token_ids: true
+        chat_template_kwargs:
+            enable_thinking: false

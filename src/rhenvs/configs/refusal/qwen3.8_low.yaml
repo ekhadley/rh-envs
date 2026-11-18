@@ -1,0 +1,13 @@
+# Qwen/Qwen3.8-27B at reasoning effort low, the sampling of grader/qwen3.8_low.yaml (temperature 1, top_p 0.95, top_k 20, 4096 tokens of
+# reasoning and answer together). The system prompt is heretic's default.
+system_prompt: You are a helpful assistant.
+
+model:
+    temperature: 1.0
+    top_p: 0.95
+    max_tokens: 4096
+    extra_body:
+        top_k: 20
+        return_token_ids: true
+        chat_template_kwargs:
+            reasoning_effort: low
